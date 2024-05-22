@@ -1,0 +1,23 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model FinancialTransaction {
+  id                  Int      @id @default(autoincrement())
+  origin_bank         String
+  origin_branch       String
+  origin_account      String
+  destination_bank    String
+  destination_branch  String
+  destination_account String
+  amount              Float
+  date                DateTime
+}
