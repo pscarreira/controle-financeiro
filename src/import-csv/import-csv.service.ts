@@ -2,30 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FinancialTransactionService } from 'src/financial-transaction/financial-transaction.service';
 import { removeDateTimeZone } from 'src/common/utils/date.utils';
+import { readCSV } from 'src/common/utils/csv.utils';
+
+const TRANSACTION_DATA_LENGTH = 8;
+const DATE_INDEX = 7;
 
 @Injectable()
 export class ImportCsvService {
   constructor(private ftService: FinancialTransactionService) {}
 
-  async readCSV(file: Express.Multer.File): Promise<any> {
-    const fileBuffer = file.buffer;
-    const fileContent = fileBuffer.toString('utf8');
-    return fileContent;
+  private isValidTransactionData(values: string[]): boolean {
+    if (values.length < TRANSACTION_DATA_LENGTH) {
+      return false;
+    }
+
+    return !values.some((value) => value === '' || value === null);
   }
 
-  private isValidTransaction(values: string[]): boolean {
-    if (values.length < 7) {
-      return false;
-    }
-
-    const hasEmptyOrNull = values.some(
-      (value) => value === '' || value === null,
-    );
-    if (hasEmptyOrNull) {
-      return false;
-    }
-
-    return true;
+  private isDateWithinRange(date: Date, start: Date, end: Date): boolean {
+    return date.getTime() >= start.getTime() && date.getTime() <= end.getTime();
   }
 
   private createTransaction(
@@ -54,7 +49,7 @@ export class ImportCsvService {
   }
 
   async importTransactions(file: Express.Multer.File): Promise<any> {
-    const content = await this.readCSV(file);
+    const content = await readCSV(file);
 
     if (content === '') {
       throw new Error('Empty file');
@@ -62,7 +57,7 @@ export class ImportCsvService {
 
     const lines = content.split('\n');
     const firstTransactionDate = removeDateTimeZone(
-      new Date(lines[0].split(',')[7]),
+      new Date(lines[0].split(',')[DATE_INDEX]),
     );
 
     // Getting the valid range of dates for transactions
@@ -88,18 +83,20 @@ export class ImportCsvService {
       [];
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const values = line.split(',');
+      const values = lines[i].split(',');
 
-      if (!this.isValidTransaction(values)) {
+      if (!this.isValidTransactionData(values)) {
         continue;
       }
 
       const date = removeDateTimeZone(new Date(values[7]));
 
       if (
-        date.getTime() < startDtOfTransactions.getTime() ||
-        date.getTime() > endDtOfTransactions.getTime()
+        !this.isDateWithinRange(
+          date,
+          startDtOfTransactions,
+          endDtOfTransactions,
+        )
       ) {
         continue;
       }
