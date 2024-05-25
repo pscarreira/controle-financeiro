@@ -21,3 +21,9 @@ model FinancialTransaction {
   amount              Float
   date                DateTime
 }
+
+model Importation {
+  id                Int      @id @default(autoincrement())
+  created_at        DateTime @default(now())
+  transactions_date DateTime
+}

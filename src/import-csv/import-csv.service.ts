@@ -3,13 +3,17 @@ import { Prisma } from '@prisma/client';
 import { FinancialTransactionService } from 'src/financial-transaction/financial-transaction.service';
 import { removeDateTimeZone } from 'src/common/utils/date.utils';
 import { readCSV } from 'src/common/utils/csv.utils';
+import { ImportationService } from 'src/importation/importation.service';
 
 const TRANSACTION_DATA_LENGTH = 8;
 const DATE_INDEX = 7;
 
 @Injectable()
 export class ImportCsvService {
-  constructor(private ftService: FinancialTransactionService) {}
+  constructor(
+    private ftService: FinancialTransactionService,
+    private impService: ImportationService,
+  ) {}
 
   private isValidTransactionData(values: string[]): boolean {
     if (values.length < TRANSACTION_DATA_LENGTH) {
@@ -78,6 +82,10 @@ export class ImportCsvService {
         'There is already other transactions registered on the same date',
       );
     }
+
+    await this.impService.createImportation({
+      transactions_date: firstTransactionDate,
+    });
 
     const transactionsToCreate: Prisma.FinancialTransactionCreateManyInput[] =
       [];
