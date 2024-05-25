@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { FinancialTransactionService } from 'src/financial-transaction/financial-transaction.service';
 import { removeDateTimeZone } from 'src/common/utils/date.utils';
 import { readCSV } from 'src/common/utils/csv.utils';
-import { ImportationService } from 'src/importation/importation.service';
+import { ImportationService } from '../importation/importation.service';
 
 const TRANSACTION_DATA_LENGTH = 8;
 const DATE_INDEX = 7;
