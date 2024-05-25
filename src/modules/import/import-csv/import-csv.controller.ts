@@ -32,11 +32,7 @@ export class ImportCsvController {
     )
     file: Express.Multer.File,
   ) {
-    try {
-      const result = await this.service.importTransactions(file);
-      return { message: 'File uploaded successfully', content: result };
-    } catch (error: any) {
-      return { message: 'Error importing file', error: error.message };
-    }
+    const result = await this.service.importTransactions(file);
+    return { message: 'File uploaded successfully', content: result };
   }
 }

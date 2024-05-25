@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FinancialTransactionService } from 'src/financial-transaction/financial-transaction.service';
 import { removeDateTimeZone } from 'src/common/utils/date.utils';
@@ -52,12 +52,30 @@ export class ImportCsvService {
     };
   }
 
+  private async createImportation(date: Date) {
+    await this.impService.createImportation({
+      transactions_date: date,
+    });
+  }
+
+  private async validateFileContent(content: string) {
+    if (content === '') {
+      throw new BadRequestException('Empty file');
+    }
+  }
+
+  private async validateTransactionDate(start: Date, end: Date) {
+    if (await this.ftService.existsTransactionOnDate(start, end)) {
+      throw new BadRequestException(
+        'There is already other transactions registered on the same date',
+      );
+    }
+  }
+
   async importTransactions(file: Express.Multer.File): Promise<any> {
     const content = await readCSV(file);
 
-    if (content === '') {
-      throw new Error('Empty file');
-    }
+    await this.validateFileContent(content);
 
     const lines = content.split('\n');
     const firstTransactionDate = removeDateTimeZone(
@@ -72,20 +90,12 @@ export class ImportCsvService {
       new Date(firstTransactionDate.setHours(23, 59, 59, 999)),
     );
 
-    if (
-      await this.ftService.existsTransactionOnDate(
-        startDtOfTransactions,
-        endDtOfTransactions,
-      )
-    ) {
-      throw new Error(
-        'There is already other transactions registered on the same date',
-      );
-    }
+    await this.validateTransactionDate(
+      startDtOfTransactions,
+      endDtOfTransactions,
+    );
 
-    await this.impService.createImportation({
-      transactions_date: firstTransactionDate,
-    });
+    await this.createImportation(firstTransactionDate);
 
     const transactionsToCreate: Prisma.FinancialTransactionCreateManyInput[] =
       [];
