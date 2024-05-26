@@ -1,15 +1,23 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CreateUserDTO } from './dto/createUser.dto';
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { MailService } from 'src/modules/mail/mailer.service';
 
 const PASSWORD_LENGTH = 6;
 const PASSWORD_RANGE = 1000000;
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   private async generatePassword(): Promise<string> {
     const password = Math.floor(Math.random() * PASSWORD_RANGE).toString();
@@ -33,6 +41,12 @@ export class UserService {
       ...user,
       password: await bcrypt.hash(password, 10),
     };
+
+    try {
+      await this.mailService.sendWelcomeEmail(user.email, password);
+    } catch (error) {
+      throw new InternalServerErrorException('Error sending email', error);
+    }
 
     await this.prisma.user.create({ data: newUser });
 
