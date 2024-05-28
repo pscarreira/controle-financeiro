@@ -8,6 +8,7 @@ import { CreateUserDTO } from './dto/createUser.dto';
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { MailService } from 'src/modules/mail/mailer.service';
+import { ConfigService } from '@nestjs/config';
 
 const PASSWORD_LENGTH = 6;
 const PASSWORD_RANGE = 1000000;
@@ -17,7 +18,29 @@ export class UserService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.createAdminUser();
+  }
+
+  private async createAdminUser() {
+    const userAdmin = await this.prisma.user.findFirst({
+      where: { username: 'admin' },
+    });
+
+    if (!userAdmin) {
+      await this.prisma.user.create({
+        data: {
+          username: 'admin',
+          email: this.configService.get('ADMIN_EMAIL'),
+          password: await bcrypt.hashSync(
+            this.configService.get('ADMIN_PASSWORD'),
+            10,
+          ),
+        },
+      });
+    }
+  }
 
   private async generatePassword(): Promise<string> {
     const password = Math.floor(Math.random() * PASSWORD_RANGE).toString();
