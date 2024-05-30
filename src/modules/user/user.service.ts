@@ -16,9 +16,9 @@ const PASSWORD_RANGE = 1000000;
 @Injectable()
 export class UserService {
   constructor(
-    private prisma: PrismaService,
-    private mailService: MailService,
-    private configService: ConfigService,
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService,
   ) {
     this.createAdminUser();
   }
@@ -74,5 +74,9 @@ export class UserService {
     await this.prisma.user.create({ data: newUser });
 
     return { message: 'User created!' };
+  }
+
+  async findUserByUsername(username: string) {
+    return this.prisma.user.findFirst({ where: { username } });
   }
 }
