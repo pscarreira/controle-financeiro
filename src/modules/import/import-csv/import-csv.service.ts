@@ -29,7 +29,8 @@ export class ImportCsvService {
 
   private createTransaction(
     values: string[],
-  ): Prisma.FinancialTransactionCreateInput {
+    importationId: number,
+  ): Prisma.FinancialTransactionCreateManyInput {
     const [
       origin_bank,
       origin_branch,
@@ -49,12 +50,14 @@ export class ImportCsvService {
       destination_account,
       amount: parseFloat(amount),
       date: removeDateTimeZone(new Date(date)),
+      importationId: importationId,
     };
   }
 
   private async createImportation(date: Date, userId: number) {
-    await this.impService.createImportation({
+    return await this.impService.createImportation({
       transactions_date: date,
+      created_at: removeDateTimeZone(new Date()),
       User: {
         connect: {
           id: userId,
@@ -103,7 +106,10 @@ export class ImportCsvService {
       endDtOfTransactions,
     );
 
-    await this.createImportation(firstTransactionDate, userId);
+    const importation = await this.createImportation(
+      firstTransactionDate,
+      userId,
+    );
 
     const transactionsToCreate: Prisma.FinancialTransactionCreateManyInput[] =
       [];
@@ -127,7 +133,7 @@ export class ImportCsvService {
         continue;
       }
 
-      const transaction = this.createTransaction(values);
+      const transaction = this.createTransaction(values, importation.id);
       transactionsToCreate.push(transaction);
     }
 
