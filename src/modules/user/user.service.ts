@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CreateUserDTO } from './dto/createUser.dto';
@@ -9,6 +10,7 @@ import { PrismaService } from 'src/core/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { MailService } from 'src/modules/mail/mailer.service';
 import { ConfigService } from '@nestjs/config';
+import { UpdateUserDTO } from './dto/updateUser.dto';
 
 const PASSWORD_LENGTH = 6;
 const PASSWORD_RANGE = 1000000;
@@ -77,6 +79,49 @@ export class UserService {
   }
 
   async findUserByUsername(username: string) {
+    if (username === 'admin') throw new NotFoundException('User not found');
     return this.prisma.user.findFirst({ where: { username } });
+  }
+
+  async findUserByEmailOrUsername(search: string) {
+    return await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { username: { contains: search } },
+          { email: { contains: search } },
+        ],
+        AND: { NOT: { username: 'admin' } },
+      },
+      select: {
+        username: true,
+        email: true,
+      },
+    });
+  }
+
+  async deleteUser(id: number) {
+    const user = await this.prisma.user.findFirst({
+      where: { id },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+    if (user.username === 'admin') throw new NotFoundException();
+
+    return await this.prisma.user.delete({ where: { id } });
+  }
+
+  async updateUser(id: number, data: UpdateUserDTO) {
+    const user = await this.prisma.user.findFirst({
+      where: { id },
+    });
+
+    if (user.username === 'admin') throw new NotFoundException();
+    if (!user) throw new NotFoundException('User not found');
+
+    return await this.prisma.user.update({
+      where: { id },
+      data: { ...data },
+      select: { username: true, email: true },
+    });
   }
 }
