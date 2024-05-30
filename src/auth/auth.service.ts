@@ -17,6 +17,10 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
+    if (user.active === false) {
+      throw new UnauthorizedException('User is not active');
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {

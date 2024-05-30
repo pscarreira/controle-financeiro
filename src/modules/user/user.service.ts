@@ -107,7 +107,11 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
     if (user.username === 'admin') throw new NotFoundException();
 
-    return await this.prisma.user.delete({ where: { id } });
+    return await this.prisma.user.update({
+      where: { id },
+      data: { active: false },
+      select: { username: true, email: true, active: true },
+    });
   }
 
   async updateUser(id: number, data: UpdateUserDTO) {
