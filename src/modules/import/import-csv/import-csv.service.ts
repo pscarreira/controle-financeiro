@@ -52,9 +52,14 @@ export class ImportCsvService {
     };
   }
 
-  private async createImportation(date: Date) {
+  private async createImportation(date: Date, userId: number) {
     await this.impService.createImportation({
       transactions_date: date,
+      User: {
+        connect: {
+          id: userId,
+        },
+      },
     });
   }
 
@@ -72,7 +77,10 @@ export class ImportCsvService {
     }
   }
 
-  async importTransactions(file: Express.Multer.File): Promise<any> {
+  async importTransactions(
+    file: Express.Multer.File,
+    userId: number,
+  ): Promise<any> {
     const content = await readCSV(file);
 
     await this.validateFileContent(content);
@@ -95,7 +103,7 @@ export class ImportCsvService {
       endDtOfTransactions,
     );
 
-    await this.createImportation(firstTransactionDate);
+    await this.createImportation(firstTransactionDate, userId);
 
     const transactionsToCreate: Prisma.FinancialTransactionCreateManyInput[] =
       [];

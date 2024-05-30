@@ -26,11 +26,14 @@ model Importation {
   id                Int      @id @default(autoincrement())
   created_at        DateTime @default(now())
   transactions_date DateTime
+  User              User?    @relation(fields: [userId], references: [id])
+  userId            Int?
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  username String
-  email    String @unique
-  password String
+  id           Int           @id @default(autoincrement())
+  username     String
+  email        String        @unique
+  password     String
+  importations Importation[]
 }

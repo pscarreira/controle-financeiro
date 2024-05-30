@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImportCsvService } from './import-csv.service';
+import { IdentifyUser } from 'src/common/decorators/identify-user.decorator';
 
 @Controller('import-csv')
 export class ImportCsvController {
@@ -31,8 +32,9 @@ export class ImportCsvController {
       }),
     )
     file: Express.Multer.File,
+    @IdentifyUser() userId: number,
   ) {
-    const result = await this.service.importTransactions(file);
+    const result = await this.service.importTransactions(file, userId);
     return { message: 'File uploaded successfully', content: result };
   }
 }
